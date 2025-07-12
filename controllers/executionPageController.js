@@ -171,3 +171,49 @@ exports.updatePageStatus = async (req, res) => {
     res.status(500).json({ message: "Failed to update page status" });
   }
 };
+exports.replacePage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPageName } = req.body;
+
+    if (!newPageName || newPageName.trim() === "") {
+      return res.status(400).json({ message: "New page name is required" });
+    }
+
+    const page = await ExecutionPage.findById(id);
+    if (!page) return res.status(404).json({ message: "Page not found" });
+
+    const execution = await Execution.findById(page.executionId);
+    if (!execution)
+      return res.status(404).json({ message: "Execution not found" });
+
+    // 🔒 Only Admin / CampaignManager can replace
+    if (!["admin", "campaignManager"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // ✅ Mark original as replaced
+    page.status = "replaced";
+    await page.save();
+
+    // ✅ Add new page
+    const newPage = new ExecutionPage({
+      executionId: execution._id,
+      pageName: newPageName,
+      status: "found", // You can add validation here if needed
+      category: "",
+      groupName: "",
+    });
+
+    await newPage.save();
+
+    res.json({
+      message: "Page replaced successfully",
+      replacedPageId: page._id,
+      newPage,
+    });
+  } catch (err) {
+    console.error("Replace page error:", err);
+    res.status(500).json({ message: "Failed to replace page" });
+  }
+};

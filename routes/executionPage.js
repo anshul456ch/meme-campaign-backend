@@ -6,6 +6,7 @@ const {
   updateExecutionPage,
   deleteExecutionPage,
   updatePageStatus,
+  replacePage,
 } = require("../controllers/executionPageController");
 
 router.post(
@@ -37,6 +38,14 @@ router.put(
   requireLogin,
   checkRole(["admin", "campaignManager"]),
   updatePageStatus
+);
+
+// 🔄 Replace execution page (Admin or CampaignManager only)
+router.put(
+  "/:id/replace",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  replacePage
 );
 
 module.exports = router;
