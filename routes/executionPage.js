@@ -4,6 +4,8 @@ const { requireLogin, checkRole } = require("../middleware/auth");
 const {
   addExecutionPages,
   updateExecutionPage,
+  deleteExecutionPage,
+  updatePageStatus,
 } = require("../controllers/executionPageController");
 
 router.post(
@@ -19,6 +21,22 @@ router.put(
   requireLogin,
   checkRole(["executionPerson"]),
   updateExecutionPage
+);
+
+// 🔥 Admin-only delete execution page
+router.delete(
+  "/:id",
+  requireLogin,
+  checkRole(["admin", "campaignManager", "executionPerson"]),
+  deleteExecutionPage
+);
+
+// 🔄 Update page status (Admin or CampaignManager only)
+router.put(
+  "/:id/status",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  updatePageStatus
 );
 
 module.exports = router;

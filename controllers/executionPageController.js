@@ -111,3 +111,63 @@ exports.updateExecutionPage = async (req, res) => {
     res.status(500).json({ message: "Failed to update page" });
   }
 };
+
+exports.deleteExecutionPage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const page = await ExecutionPage.findById(id);
+    if (!page) return res.status(404).json({ message: "Page not found" });
+
+    const execution = await Execution.findById(page.executionId);
+    if (!execution)
+      return res.status(404).json({ message: "Execution not found" });
+
+    // 🔒 Permissions check
+    const isOwner =
+      req.user.role === "executionPerson" &&
+      execution.executionPerson.toString() === req.user._id.toString();
+
+    const isPrivileged = ["admin", "campaignManager"].includes(req.user.role);
+
+    if (!isOwner && !isPrivileged) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    await page.deleteOne();
+
+    res.json({ message: "Execution page deleted successfully" });
+  } catch (err) {
+    console.error("Delete execution page error:", err);
+    res.status(500).json({ message: "Failed to delete page" });
+  }
+};
+
+exports.updatePageStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    const page = await ExecutionPage.findById(id);
+    if (!page) {
+      return res.status(404).json({ message: "Execution page not found" });
+    }
+
+    // 🛡 Only Admin or CampaignManager can update status
+    if (!["admin", "campaignManager"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    page.status = status;
+    await page.save();
+
+    res.json({ message: "Page status updated", page });
+  } catch (err) {
+    console.error("Update page status error:", err);
+    res.status(500).json({ message: "Failed to update page status" });
+  }
+};
