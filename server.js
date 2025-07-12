@@ -13,7 +13,7 @@ const campaignRoutes = require("./routes/campaign"); // ✅ Import campaign rout
 const executionRoutes = require("./routes/execution"); // ✅ Import execution routes
 const executionPageRoutes = require("./routes/executionPage"); // ✅ Import execution page routes
 const dashboardRoutes = require("./routes/dashboard"); // ✅ Import dashboard routes
-
+const adminRoutes = require("./routes/admin"); // ✅ Import admin routes
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -32,6 +32,8 @@ app.use("/api/executions", executionRoutes); // ✅ Mount execution routes
 app.use("/api/executions", executionPageRoutes); // ✅ Mount execution page routes
 app.use("/api/dashboard", dashboardRoutes); // ✅ Mount dashboard routes
 app.use("/api/execution-pages", executionPageRoutes);
+app.use('/api/admin', adminRoutes); // ✅ Mount admin routes
+
 
 
 // Connect DB & Start Server
