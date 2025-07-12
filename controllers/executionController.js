@@ -55,11 +55,9 @@ exports.addExecutionPages = async (req, res) => {
 
     // ✅ Block adding pages if execution is already submitted
     if (execution.status === "submitted") {
-      return res
-        .status(400)
-        .json({
-          message: "Execution is already submitted and cannot be modified",
-        });
+      return res.status(400).json({
+        message: "Execution is already submitted and cannot be modified",
+      });
     }
 
     const sheetPages = await getPageSource(); // ✅ Dynamic source (sheets or DB)
@@ -180,5 +178,49 @@ exports.submitExecution = async (req, res) => {
   } catch (err) {
     console.error("Submit execution error:", err);
     res.status(500).json({ message: "Failed to submit execution" });
+  }
+};
+
+exports.getExecutionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const execution = await Execution.findById(id).populate(
+      "executionPerson",
+      "name email"
+    );
+
+    if (!execution) {
+      return res.status(404).json({ message: "Execution not found" });
+    }
+
+    // Only allow view if:
+    // - Admin
+    // - CampaignManager
+    // - ExecutionPerson who created it
+    if (
+      req.user.role === "executionPerson" &&
+      execution.executionPerson._id.toString() !== req.user._id.toString()
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to view this execution" });
+    }
+
+    const pages = await ExecutionPage.find({ executionId: id });
+
+    res.json({
+      execution: {
+        _id: execution._id,
+        roundNumber: execution.roundNumber,
+        date: execution.date,
+        status: execution.status,
+        executionPerson: execution.executionPerson,
+        pages,
+      },
+    });
+  } catch (err) {
+    console.error("Get execution error:", err);
+    res.status(500).json({ message: "Failed to fetch execution details" });
   }
 };

@@ -1,15 +1,43 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { addExecution, getExecutionsByCampaign, submitExecution } = require('../controllers/executionController');
-const { requireLogin, checkRole } = require('../middleware/auth');
+const {
+  addExecution,
+  getExecutionsByCampaign,
+  submitExecution,
+  getExecutionById,
+} = require("../controllers/executionController");
+const { requireLogin, checkRole } = require("../middleware/auth");
 
-// Add execution round - by execution person or campaign manager or admin
-router.post('/', requireLogin, checkRole(['executionPerson', 'campaignManager','admin']), addExecution);
-// Get all executions for a campaign
-router.get('/:campaignId', requireLogin, checkRole(['admin', 'campaignManager']), getExecutionsByCampaign);
+// 🔹 1. Add execution round
+router.post(
+  "/",
+  requireLogin,
+  checkRole(["executionPerson", "campaignManager", "admin"]),
+  addExecution
+);
 
-// Mark as submitted (execution person only)
-router.put('/:id/submit', requireLogin, checkRole(['executionPerson']), submitExecution);
+// 🔹 2. Get executions by campaign
+router.get(
+  "/campaign/:campaignId", // ✅ more specific path
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  getExecutionsByCampaign
+);
 
-router.get('/campaign/:campaignId', requireLogin, checkRole(['admin', 'campaignManager']), getExecutionsByCampaign);
+// 🔹 3. Submit execution
+router.put(
+  "/:id/submit",
+  requireLogin,
+  checkRole(["executionPerson"]),
+  submitExecution
+);
+
+// 🔹 4. Get single execution
+router.get(
+  "/:id", // ✅ now this works properly
+  requireLogin,
+  checkRole(["admin", "campaignManager", "executionPerson"]),
+  getExecutionById
+);
+
 module.exports = router;
