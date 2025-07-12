@@ -224,3 +224,25 @@ exports.getExecutionById = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch execution details" });
   }
 };
+
+exports.deleteExecution = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const execution = await Execution.findById(id);
+    if (!execution) {
+      return res.status(404).json({ message: "Execution not found" });
+    }
+
+    // ✅ Delete all associated pages
+    await ExecutionPage.deleteMany({ executionId: id });
+
+    // ✅ Delete the execution
+    await Execution.findByIdAndDelete(id);
+
+    res.json({ message: "Execution round deleted successfully" });
+  } catch (err) {
+    console.error("Delete execution error:", err);
+    res.status(500).json({ message: "Failed to delete execution round" });
+  }
+};

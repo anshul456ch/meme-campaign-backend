@@ -5,6 +5,7 @@ const {
   getExecutionsByCampaign,
   submitExecution,
   getExecutionById,
+  deleteExecution,
 } = require("../controllers/executionController");
 const { requireLogin, checkRole } = require("../middleware/auth");
 
@@ -39,5 +40,8 @@ router.get(
   checkRole(["admin", "campaignManager", "executionPerson"]),
   getExecutionById
 );
+
+// 🔥 Admin-only delete execution
+router.delete("/:id", requireLogin, checkRole(["admin"]), deleteExecution);
 
 module.exports = router;
