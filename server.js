@@ -31,6 +31,7 @@ app.use("/api/campaigns", campaignRoutes); // ✅ Mount campaign routes
 app.use("/api/executions", executionRoutes); // ✅ Mount execution routes
 app.use("/api/executions", executionPageRoutes); // ✅ Mount execution page routes
 app.use("/api/dashboard", dashboardRoutes); // ✅ Mount dashboard routes
+app.use("/api/execution-pages", executionPageRoutes);
 
 // Connect DB & Start Server
 const PORT = process.env.PORT || 5000;

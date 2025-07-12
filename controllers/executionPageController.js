@@ -1,8 +1,8 @@
-const Execution = require('../models/Execution');
-const ExecutionPage = require('../models/ExecutionPage');
-const { getSheetData } = require('../utils/sheets'); // We'll stub this
-const Page = require('../models/Page');
-const USE_CACHE = process.env.USE_CACHE === 'true';
+const Execution = require("../models/Execution");
+const ExecutionPage = require("../models/ExecutionPage");
+const { getSheetData } = require("../utils/sheets"); // We'll stub this
+const Page = require("../models/Page");
+const USE_CACHE = process.env.USE_CACHE === "true";
 
 exports.addExecutionPages = async (req, res) => {
   try {
@@ -11,10 +11,11 @@ exports.addExecutionPages = async (req, res) => {
 
     // Validate execution belongs to current user
     const execution = await Execution.findById(executionId);
-    if (!execution) return res.status(404).json({ message: 'Execution not found' });
+    if (!execution)
+      return res.status(404).json({ message: "Execution not found" });
 
     if (execution.executionPerson.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not your execution round' });
+      return res.status(403).json({ message: "Not your execution round" });
     }
 
     // 1. Get Google Sheet (or local DB) data
@@ -32,9 +33,9 @@ exports.addExecutionPages = async (req, res) => {
         const page = new ExecutionPage({
           executionId,
           pageName: match.pageName,
-          category: match.category || '',
-          groupName: match.groupName || '',
-          status: 'found'
+          category: match.category || "",
+          groupName: match.groupName || "",
+          status: "found",
         });
         await page.save();
         found.push(page);
@@ -42,7 +43,7 @@ exports.addExecutionPages = async (req, res) => {
         const page = new ExecutionPage({
           executionId,
           pageName: name,
-          status: 'not found'
+          status: "not found",
         });
         await page.save();
         notFound.push(page);
@@ -50,28 +51,63 @@ exports.addExecutionPages = async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Pages processed',
+      message: "Pages processed",
       foundCount: found.length,
       notFoundCount: notFound.length,
       found,
-      notFound
+      notFound,
     });
   } catch (err) {
-    console.error('Page match error:', err);
-    res.status(500).json({ message: 'Failed to process pages' });
+    console.error("Page match error:", err);
+    res.status(500).json({ message: "Failed to process pages" });
   }
 };
 
 async function getPageSource() {
   if (USE_CACHE) {
     const pages = await Page.find({});
-    return pages.map(pg => ({
+    return pages.map((pg) => ({
       pageName: pg.pageName,
       groupLink: pg.groupLink,
-      category: pg.category
+      category: pg.category,
     }));
   } else {
-    const { getSheetData } = require('../utils/sheets');
+    const { getSheetData } = require("../utils/sheets");
     return await getSheetData();
   }
 }
+
+exports.updateExecutionPage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pageName, status, category, groupName } = req.body;
+
+    const page = await ExecutionPage.findById(id);
+    if (!page) return res.status(404).json({ message: "Page not found" });
+
+    const execution = await Execution.findById(page.executionId);
+    if (!execution)
+      return res.status(404).json({ message: "Execution not found" });
+
+    // 🔒 Only executionPerson who created this round can update
+    if (
+      req.user.role !== "executionPerson" ||
+      execution.executionPerson.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // ✅ Apply updates (only if present)
+    if (pageName) page.pageName = pageName;
+    if (status) page.status = status;
+    if (category) page.category = category;
+    if (groupName) page.groupName = groupName;
+
+    await page.save();
+
+    res.json({ message: "Page updated", page });
+  } catch (err) {
+    console.error("Edit page error:", err);
+    res.status(500).json({ message: "Failed to update page" });
+  }
+};
