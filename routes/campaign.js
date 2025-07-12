@@ -1,21 +1,61 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { createCampaign, getCampaigns, updateCampaign, deleteCampaign, getCampaignSummary } = require('../controllers/campaignController');
-const { requireLogin, checkRole } = require('../middleware/auth');
+const {
+  createCampaign,
+  getCampaigns,
+  updateCampaign,
+  deleteCampaign,
+  getCampaignSummary,
+  archiveCampaign,
+} = require("../controllers/campaignController");
+const { requireLogin, checkRole } = require("../middleware/auth");
 
 // Create campaign (admin or campaign manager)
-router.post('/', requireLogin, checkRole(['admin', 'campaignManager']), createCampaign);
+router.post(
+  "/",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  createCampaign
+);
 
 // Get campaigns (admin & campaign manager)
-router.get('/', requireLogin, checkRole(['admin', 'campaignManager']), getCampaigns);
+router.get(
+  "/",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  getCampaigns
+);
 
 // Update
-router.put('/:id', requireLogin, checkRole(['admin', 'campaignManager']), updateCampaign);
+router.put(
+  "/:id",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  updateCampaign
+);
 
 // Delete
-router.delete('/:id', requireLogin, checkRole(['admin', 'campaignManager']), deleteCampaign);
+router.delete(
+  "/:id",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  deleteCampaign
+);
 
 // View campaign summary
-router.get('/:id/summary', requireLogin, checkRole(['admin', 'campaignManager']), getCampaignSummary);
+router.get(
+  "/:id/summary",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  getCampaignSummary
+);
+
+// Archive campaign (admin or owner)
+router.put(
+  "/:id/archive",
+  requireLogin,
+  checkRole(["admin", "campaignManager"]),
+  archiveCampaign
+);
 
 module.exports = router;

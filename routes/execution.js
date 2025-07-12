@@ -6,6 +6,7 @@ const {
   submitExecution,
   getExecutionById,
   deleteExecution,
+  archiveExecution,
 } = require("../controllers/executionController");
 const { requireLogin, checkRole } = require("../middleware/auth");
 
@@ -43,5 +44,13 @@ router.get(
 
 // 🔥 Admin-only delete execution
 router.delete("/:id", requireLogin, checkRole(["admin"]), deleteExecution);
+
+// 🔥 Admin-only archive execution
+router.put(
+  "/:id/archive",
+  requireLogin,
+  checkRole(["admin", "executionPerson"]),
+  archiveExecution
+);
 
 module.exports = router;

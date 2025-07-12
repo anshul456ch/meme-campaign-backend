@@ -109,7 +109,7 @@ exports.getExecutionsByCampaign = async (req, res) => {
   try {
     const { campaignId } = req.params;
 
-    const executions = await Execution.find({ campaignId })
+    const executions = await Execution.find({ campaignId, isArchived: false })
       .populate("executionPerson", "name email")
       .sort({ roundNumber: 1 });
 
@@ -244,5 +244,31 @@ exports.deleteExecution = async (req, res) => {
   } catch (err) {
     console.error("Delete execution error:", err);
     res.status(500).json({ message: "Failed to delete execution round" });
+  }
+};
+
+// 🔹 Soft delete execution
+exports.archiveExecution = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const execution = await Execution.findById(id);
+    if (!execution)
+      return res.status(404).json({ message: "Execution not found" });
+
+    // Access control: allow admin or owner
+    const isOwner =
+      req.user.role === "admin" ||
+      execution.executionPerson.toString() === req.user._id.toString();
+
+    if (!isOwner) return res.status(403).json({ message: "Access denied" });
+
+    execution.isArchived = true;
+    await execution.save();
+
+    res.json({ message: "Execution archived successfully", execution });
+  } catch (err) {
+    console.error("Archive execution error:", err);
+    res.status(500).json({ message: "Failed to archive execution" });
   }
 };
