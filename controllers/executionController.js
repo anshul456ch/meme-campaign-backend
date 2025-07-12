@@ -1,7 +1,7 @@
-const Execution = require('../models/Execution');
-const Campaign = require('../models/Campaign');
-const ExecutionPage = require('../models/ExecutionPage');
-const { getPageSource } = require('../utils/getPageSource'); // ✅ Import
+const Execution = require("../models/Execution");
+const Campaign = require("../models/Campaign");
+const ExecutionPage = require("../models/ExecutionPage");
+const { getPageSource } = require("../utils/getPageSource"); // ✅ Import
 
 // 🔹 Step 1: Create execution round
 exports.addExecution = async (req, res) => {
@@ -11,7 +11,7 @@ exports.addExecution = async (req, res) => {
 
     const campaign = await Campaign.findById(campaignId);
     if (!campaign) {
-      return res.status(404).json({ message: 'Campaign not found' });
+      return res.status(404).json({ message: "Campaign not found" });
     }
 
     const execution = new Execution({
@@ -20,18 +20,18 @@ exports.addExecution = async (req, res) => {
       roundNumber,
       date,
       addedBy: req.user._id,
-      status: 'draft'
+      status: "draft",
     });
 
     await execution.save();
 
     res.status(201).json({
-      message: 'Execution round created successfully',
-      execution
+      message: "Execution round created successfully",
+      execution,
     });
   } catch (err) {
-    console.error('Add execution error:', err);
-    res.status(500).json({ message: 'Failed to create execution round' });
+    console.error("Add execution error:", err);
+    res.status(500).json({ message: "Failed to create execution round" });
   }
 };
 
@@ -42,19 +42,24 @@ exports.addExecutionPages = async (req, res) => {
     const { pages = [] } = req.body;
 
     if (!Array.isArray(pages) || pages.length === 0) {
-      return res.status(400).json({ message: 'Pages array is required' });
+      return res.status(400).json({ message: "Pages array is required" });
     }
 
     const execution = await Execution.findById(executionId);
-    if (!execution) return res.status(404).json({ message: 'Execution not found' });
+    if (!execution)
+      return res.status(404).json({ message: "Execution not found" });
 
     if (execution.executionPerson.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not your execution round' });
+      return res.status(403).json({ message: "Not your execution round" });
     }
 
     // ✅ Block adding pages if execution is already submitted
-    if (execution.status === 'submitted') {
-      return res.status(400).json({ message: 'Execution is already submitted and cannot be modified' });
+    if (execution.status === "submitted") {
+      return res
+        .status(400)
+        .json({
+          message: "Execution is already submitted and cannot be modified",
+        });
     }
 
     const sheetPages = await getPageSource(); // ✅ Dynamic source (sheets or DB)
@@ -71,9 +76,9 @@ exports.addExecutionPages = async (req, res) => {
         const page = new ExecutionPage({
           executionId,
           pageName: match.pageName,
-          category: match.category || '',
-          groupName: match.groupName || '',
-          status: 'found'
+          category: match.category || "",
+          groupName: match.groupName || "",
+          status: "found",
         });
         await page.save();
         found.push(page);
@@ -81,7 +86,7 @@ exports.addExecutionPages = async (req, res) => {
         const page = new ExecutionPage({
           executionId,
           pageName: name,
-          status: 'not found'
+          status: "not found",
         });
         await page.save();
         notFound.push(page);
@@ -89,15 +94,15 @@ exports.addExecutionPages = async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Pages processed',
+      message: "Pages processed",
       foundCount: found.length,
       notFoundCount: notFound.length,
       found,
-      notFound
+      notFound,
     });
   } catch (err) {
-    console.error('Page match error:', err);
-    res.status(500).json({ message: 'Failed to process pages' });
+    console.error("Page match error:", err);
+    res.status(500).json({ message: "Failed to process pages" });
   }
 };
 
@@ -107,7 +112,7 @@ exports.getExecutionsByCampaign = async (req, res) => {
     const { campaignId } = req.params;
 
     const executions = await Execution.find({ campaignId })
-      .populate('executionPerson', 'name email')
+      .populate("executionPerson", "name email")
       .sort({ roundNumber: 1 });
 
     const results = [];
@@ -117,10 +122,10 @@ exports.getExecutionsByCampaign = async (req, res) => {
         { $match: { executionId: exe._id } },
         {
           $group: {
-            _id: '$status',
-            count: { $sum: 1 }
-          }
-        }
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
       ]);
 
       const stats = pageStats.reduce(
@@ -128,7 +133,7 @@ exports.getExecutionsByCampaign = async (req, res) => {
           acc[item._id] = item.count;
           return acc;
         },
-        { found: 0, 'not found': 0, replaced: 0, deleted: 0 }
+        { found: 0, "not found": 0, replaced: 0, deleted: 0 }
       );
 
       results.push({
@@ -137,15 +142,16 @@ exports.getExecutionsByCampaign = async (req, res) => {
         date: exe.date,
         executionPerson: exe.executionPerson,
         status: exe.status,
-        totalPages: stats.found + stats['not found'] + stats.replaced + stats.deleted,
-        pageStats: stats
+        totalPages:
+          stats.found + stats["not found"] + stats.replaced + stats.deleted,
+        pageStats: stats,
       });
     }
 
     res.json({ executions: results });
   } catch (err) {
-    console.error('Fetch execution summary error:', err);
-    res.status(500).json({ message: 'Failed to fetch executions' });
+    console.error("Fetch execution summary error:", err);
+    res.status(500).json({ message: "Failed to fetch executions" });
   }
 };
 
@@ -156,23 +162,23 @@ exports.submitExecution = async (req, res) => {
 
     const execution = await Execution.findById(id);
     if (!execution) {
-      return res.status(404).json({ message: 'Execution not found' });
+      return res.status(404).json({ message: "Execution not found" });
     }
 
     if (execution.executionPerson.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not your execution round' });
+      return res.status(403).json({ message: "Not your execution round" });
     }
 
-    if (execution.status === 'submitted') {
-      return res.status(400).json({ message: 'Execution already submitted' });
+    if (execution.status === "submitted") {
+      return res.status(400).json({ message: "Execution already submitted" });
     }
 
-    execution.status = 'submitted';
+    execution.status = "submitted";
     await execution.save();
 
-    res.json({ message: 'Execution submitted successfully', execution });
+    res.json({ message: "Execution submitted successfully", execution });
   } catch (err) {
-    console.error('Submit execution error:', err);
-    res.status(500).json({ message: 'Failed to submit execution' });
+    console.error("Submit execution error:", err);
+    res.status(500).json({ message: "Failed to submit execution" });
   }
 };
